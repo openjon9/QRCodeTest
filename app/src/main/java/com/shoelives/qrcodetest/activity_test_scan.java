@@ -24,7 +24,8 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
     private static final String TAG = activity_test_scan.class.getSimpleName();
     private static final int REQUEST_CODE_CHOOSE_QRCODE_FROM_GALLERY = 666;
 
-    private QRCodeView mQRCodeView;
+    private static QRCodeView mQRCodeView;
+    private AsyncTask<Void, Void, String> MyAsyncTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +54,10 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
     @Override
     protected void onDestroy() {
         mQRCodeView.onDestroy();
+        if (MyAsyncTask!=null){
+            MyAsyncTask.cancel(true);
+            MyAsyncTask=null;
+        }
         super.onDestroy();
     }
 
@@ -145,48 +150,55 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
             这里为了偷懒，就没有处理匿名 AsyncTask 内部类导致 Activity 泄漏的问题
             请开发在使用时自行处理匿名内部类导致Activity内存泄漏的问题，处理方式可参考 https://github.com/GeniusVJR/LearningNotes/blob/master/Part1/Android/Android%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%80%BB%E7%BB%93.md
              */
-            new AsyncTask<Void, Void, String>() {
-                @Override
-                protected String doInBackground(Void... params) {
-                    Bitmap bitmap = getDecodeAbleBitmap(picturePath);
-                    int picw = bitmap.getWidth();
-                    int pich = bitmap.getHeight();
-                    int[] pix = new int[picw * pich];
-                    byte[] pixytes = new byte[picw * pich];
-                    bitmap.getPixels(pix, 0, picw, 0, 0, picw, pich);
-                    int R, G, B, Y;
+            if (MyAsyncTask == null) {
+                MyAsyncTask = new AsyncTask<Void, Void, String>() {
+                    @Override
+                    protected String doInBackground(Void... params) {
+                        Bitmap bitmap = getDecodeAbleBitmap(picturePath);
+                        int picw = bitmap.getWidth();
+                        int pich = bitmap.getHeight();
+                        int[] pix = new int[picw * pich];
+                        byte[] pixytes = new byte[picw * pich];
+                        bitmap.getPixels(pix, 0, picw, 0, 0, picw, pich);
+                        int R, G, B, Y;
 
-                    for (int y = 0; y < pich; y++) {
-                        for (int x = 0; x < picw; x++) {
-                            int index = y * picw + x;
-                            R = (pix[index] >> 16) & 0xff;     //bitwise shifting
-                            G = (pix[index] >> 8) & 0xff;
-                            B = pix[index] & 0xff;
+                        for (int y = 0; y < pich; y++) {
+                            for (int x = 0; x < picw; x++) {
+                                int index = y * picw + x;
+                                R = (pix[index] >> 16) & 0xff;     //bitwise shifting
+                                G = (pix[index] >> 8) & 0xff;
+                                B = pix[index] & 0xff;
 
-                            //R,G.B - Red, Green, Blue
-                            //to restore the values after RGB modification, use
-                            //next statement
-                            pixytes[index] = (byte) (0xff000000 | (R << 16) | (G << 8) | B);
+                                //R,G.B - Red, Green, Blue
+                                //to restore the values after RGB modification, use
+                                //next statement
+                                pixytes[index] = (byte) (0xff000000 | (R << 16) | (G << 8) | B);
+                            }
+                        }
+                        ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
+                        byte[] data = new byte[(int) (bitmap.getHeight() * bitmap.getWidth() * 1.5)];
+                        rgba2Yuv420(pixytes, data, bitmap.getWidth(), bitmap.getHeight());
+                        return mQRCodeView.processData(data, bitmap.getWidth(), bitmap.getHeight(), true);
+                    }
+
+                    @Override
+                    protected void onPostExecute(String result) {
+                        if (TextUtils.isEmpty(result)) {
+                            Toast.makeText(activity_test_scan.this, "未发现二维码", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(activity_test_scan.this, result, Toast.LENGTH_SHORT).show();
                         }
                     }
-                    ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
-                    byte[] data = new byte[(int) (bitmap.getHeight() * bitmap.getWidth() * 1.5)];
-                    rgba2Yuv420(pixytes, data, bitmap.getWidth(), bitmap.getHeight());
-                    return mQRCodeView.processData(data, bitmap.getWidth(), bitmap.getHeight(), true);
-                }
 
-                @Override
-                protected void onPostExecute(String result) {
-                    if (TextUtils.isEmpty(result)) {
-                        Toast.makeText(activity_test_scan.this, "未发现二维码", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(activity_test_scan.this, result, Toast.LENGTH_SHORT).show();
+                    @Override
+                    protected void onCancelled(String s) {
+                        super.onCancelled(s);
                     }
-                }
-            }.execute();
+                }.execute();
+            }
         }
-    }
 
+    }
     /**
      * 将本地图片文件转换成可解码二维码的 Bitmap。为了避免图片太大，这里对图片进行了压缩。感谢 https://github.com/devilsen 提的 PR
      *
