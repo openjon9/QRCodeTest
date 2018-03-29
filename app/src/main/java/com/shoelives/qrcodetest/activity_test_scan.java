@@ -34,6 +34,7 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
 
         mQRCodeView = (ZBarView) findViewById(R.id.zbarview);
         mQRCodeView.setDelegate(this);
+
     }
 
     @Override
@@ -43,6 +44,12 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
 //        mQRCodeView.startCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
 
         mQRCodeView.showScanRect();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mQRCodeView.startSpot(); //一進來就可以掃描
     }
 
     @Override
@@ -64,42 +71,42 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.start_spot:
-                mQRCodeView.startSpot();
+                mQRCodeView.startSpot(); //掃描
                 break;
             case R.id.stop_spot:
-                mQRCodeView.stopSpot();
+                mQRCodeView.stopSpot();//停止
                 break;
             case R.id.start_spot_showrect:
-                mQRCodeView.startSpotAndShowRect();
+                mQRCodeView.startSpotAndShowRect();//顯示掃描框
                 break;
             case R.id.stop_spot_hiddenrect:
-                mQRCodeView.stopSpotAndHiddenRect();
+                mQRCodeView.stopSpotAndHiddenRect();//隱藏掃描框
                 break;
             case R.id.show_rect:
-                mQRCodeView.showScanRect();
+                mQRCodeView.showScanRect();//顯示框並掃描
                 break;
             case R.id.hidden_rect:
-                mQRCodeView.hiddenScanRect();
+                mQRCodeView.hiddenScanRect();//隱藏框停止掃描
                 break;
             case R.id.start_preview:
-                mQRCodeView.startCamera();
+                mQRCodeView.startCamera();//開始預覽相機功能
                 break;
             case R.id.stop_preview:
-                mQRCodeView.stopCamera();
+                mQRCodeView.stopCamera(); //停止預覽相機功能
                 break;
             case R.id.open_flashlight:
-                mQRCodeView.openFlashlight();
+                mQRCodeView.openFlashlight();//打開閃光燈
                 break;
             case R.id.close_flashlight:
-                mQRCodeView.closeFlashlight();
+                mQRCodeView.closeFlashlight();//關閉閃光燈
                 break;
             case R.id.scan_barcode:
-                mQRCodeView.changeToScanBarcodeStyle();
+                mQRCodeView.changeToScanBarcodeStyle();//掃條碼
                 break;
             case R.id.scan_qrcode:
-                mQRCodeView.changeToScanQRCodeStyle();
+                mQRCodeView.changeToScanQRCodeStyle();//掃 RQ code
                 break;
-            case R.id.choose_qrcde_from_gallery:
+            case R.id.choose_qrcde_from_gallery: //從相簿選圖
                 /*
                 从相册选取二维码图片，这里为了方便演示，使用的是
                 https://github.com/bingoogolapple/BGAPhotoPicker-Android
@@ -120,16 +127,16 @@ public class activity_test_scan extends AppCompatActivity implements QRCodeView.
 
 
     private void vibrate() {
-        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);//震動
         vibrator.vibrate(200);
     }
 
     @Override
-    public void onScanQRCodeSuccess(String result) {
+    public void onScanQRCodeSuccess(String result) { //掃到的字串回傳
         Log.i(TAG, "result:" + result);
         Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
         vibrate();
-        mQRCodeView.startSpot();
+        mQRCodeView.startSpot(); //繼續下一次掃描
     }
 
     @Override

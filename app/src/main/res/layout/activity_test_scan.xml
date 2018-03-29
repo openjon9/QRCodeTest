@@ -33,7 +33,7 @@
         app:qrcv_toolbarHeight="56dp"
         app:qrcv_topOffset="20dp"/>
 
-    <include layout="@layout/toolbar"/>
+
 
     <include layout="@layout/view_control"/>
 </RelativeLayout>
